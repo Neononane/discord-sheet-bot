@@ -1,8 +1,12 @@
 // Decode and save the service account file if on Railway
+// Decode Google credentials from env and write to file (if running on Railway)
 if (process.env.GOOGLE_CREDS_B64) {
-    const fs = require('fs');
-    fs.writeFileSync('service-account.json', Buffer.from(process.env.GOOGLE_CREDS_B64, 'base64'));
-  }
+  const fs = require('fs');
+  const path = 'service-account.json';
+  const decoded = Buffer.from(process.env.GOOGLE_CREDS_B64, 'base64').toString('utf-8');
+  fs.writeFileSync(path, decoded);
+}
+
   
 
 require('dotenv').config();
