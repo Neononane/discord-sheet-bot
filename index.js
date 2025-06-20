@@ -59,7 +59,7 @@ client.once('ready', async () => {
   console.log(`✅ Bot ready as ${client.user.tag}`);
 
   try {
-    const range = 'Dashboard!A1:D10'; // Change to your desired range
+    const range = 'Dashboard!A1:M43'; // Change to your desired range
     const values = await fetchSheetData(range);
     const table = formatAsTable(values);
 
