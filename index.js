@@ -16,7 +16,7 @@ try {
 const puppeteer = require('puppeteer');
 
 function extractColumns(values, seedNumber) {
-  const seedStart = 2; // B is index 1 (0-based), so Seed 1 is at index 1
+  const seedStart = 1; // B is index 1 (0-based), so Seed 1 is at index 1
   const seedEnd = seedStart + seedNumber - 1;
 
   return values.map(row => {
