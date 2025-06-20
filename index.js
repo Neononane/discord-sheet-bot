@@ -122,6 +122,7 @@ const imageBuffer = await renderImageFromHTML(html);
 
 const { AttachmentBuilder } = require('discord.js');
 const attachment = new AttachmentBuilder(imageBuffer, { name: 'dashboard.png' });
+const channel = await client.channels.fetch(CHANNEL_ID);
 
 await channel.send({
   content: '**📊 Rookie Rumble Dashboard**',
