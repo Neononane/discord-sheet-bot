@@ -71,22 +71,40 @@ function generateHTMLTable(values) {
       <head>
         <style>
           body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
-            background: #fff;
+            background: linear-gradient(to bottom, #0d1b2a, #1b263b);
+            color: #ffffff;
+            font-family: 'Segoe UI', sans-serif;
+            padding: 40px;
+            margin: 0;
+          }
+          h2 {
+            color: #ffffff;
+            font-size: 32px;
+            margin-bottom: 20px;
+            text-align: center;
           }
           table {
-            border-collapse: collapse;
-            font-size: 16px;
             width: 100%;
-          }
-          td, th {
-            border: 1px solid #ccc;
-            padding: 8px 12px;
-            text-align: left;
+            border-collapse: collapse;
+            background-color: #1b263b;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.05);
           }
           th {
-            background: #f0f0f0;
+            background-color: #112030;
+            color: #fcbf49;
+            font-weight: 600;
+            padding: 12px;
+            text-align: left;
+            border-bottom: 2px solid #334e68;
+          }
+          td {
+            padding: 12px;
+            border-bottom: 1px solid #334e68;
+          }
+          tr:nth-child(even) {
+            background-color: #1f2d3d;
           }
         </style>
       </head>
@@ -99,6 +117,7 @@ function generateHTMLTable(values) {
     </html>
   `;
 }
+
 
 
 
