@@ -24,8 +24,18 @@ async function renderImageFromHTML(htmlContent) {
   const page = await browser.newPage();
   
   await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
-  const contentHeight = await page.evaluate(() => document.body.scrollHeight);
-  await page.setViewport({ width: 800, height: contentHeight });
+  const dimensions = await page.evaluate(() => {
+    return {
+      width: document.body.scrollWidth,
+      height: document.body.scrollHeight,
+    };
+  });
+
+  // Resize the viewport to match content
+  await page.setViewport({
+    width: Math.min(dimensions.width + 40, 2000),  // cap width for safety
+    height: Math.min(dimensions.height + 40, 4000), // cap height to avoid accidental infinite scroll
+  });
   const screenshotBuffer = await page.screenshot({ type: 'png' });
   await browser.close();
   return screenshotBuffer;
