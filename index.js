@@ -1,23 +1,25 @@
-// Decode and save the service account file if on Railway
-// Decode Google credentials from env and write to file (if running on Railway)
+// Decode service-account.json from base64 if GOOGLE_CREDS_B64 is present
 if (process.env.GOOGLE_CREDS_B64) {
   const fs = require('fs');
-  const path = 'service-account.json';
   const decoded = Buffer.from(process.env.GOOGLE_CREDS_B64, 'base64').toString('utf-8');
-  fs.writeFileSync(path, decoded);
+  fs.writeFileSync('service-account.json', decoded);
 }
 
-  
-
+// Now load all libraries
 require('dotenv').config();
-const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
+const { Client, GatewayIntentBits } = require('discord.js');
 const { google } = require('googleapis');
 const fs = require('fs');
+
+// Set up Discord client
+const client = new Client({
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
+});
 
 const SHEET_ID = process.env.SHEET_ID;
 const CHANNEL_ID = process.env.CHANNEL_ID;
 
-// Load Google credentials
+// Set up Google Sheets client AFTER service-account.json is written
 const auth = new google.auth.GoogleAuth({
   keyFile: 'service-account.json',
   scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
@@ -27,7 +29,7 @@ const sheets = google.sheets({ version: 'v4', auth });
 async function fetchSheetData(range) {
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
-    range: range, // e.g., "Dashboard!A1:D10"
+    range: range, // Example: "Dashboard!A1:D10"
   });
   return response.data.values;
 }
@@ -44,23 +46,23 @@ function formatAsTable(values) {
   return '```' + rows.join('\n') + '```';
 }
 
-const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
-});
-
 client.once('ready', async () => {
   console.log(`Bot ready as ${client.user.tag}`);
 
-  const range = 'Dashboard!A1:D10'; // 👈 Change this to your sheet range
-  const values = await fetchSheetData(range);
-  const table = formatAsTable(values);
+  try {
+    const range = 'Dashboard!A1:D10'; // 🔁 Update this if needed
+    const values = await fetchSheetData(range);
+    const table = formatAsTable(values);
 
-  const channel = await client.channels.fetch(CHANNEL_ID);
-  const sent = await channel.send({
-    content: '**📊 Google Sheet Dashboard**\n' + table,
-  });
+    const channel = await client.channels.fetch(CHANNEL_ID);
+    await channel.send({
+      content: '**📊 Google Sheet Dashboard**\n' + table,
+    });
 
-  console.log('Dashboard posted.');
+    console.log('Dashboard posted.');
+  } catch (err) {
+    console.error('❌ Error during dashboard post:', err);
+  }
 });
 
 client.login(process.env.DISCORD_TOKEN);
