@@ -15,6 +15,26 @@ try {
 
 const puppeteer = require('puppeteer');
 
+function extractColumns(values, seedNumber) {
+  const seedStart = 2; // B is index 1 (0-based), so Seed 1 is at index 1
+  const seedEnd = seedStart + seedNumber - 1;
+
+  return values.map(row => {
+    const baseCols = [row[0]]; // Column A: Racer
+    const seeds = row.slice(seedStart, seedEnd + 1); // Seeds B to desired
+    const racesPlayed = row[10] || ''; // Column K
+    const top4Total = row[11] || '';   // Column L
+    const badge = row[12] || '';       // Column M
+
+    const showExtras = seedNumber >= 4;
+
+    return showExtras
+      ? [...baseCols, ...seeds, racesPlayed, top4Total, badge]
+      : [...baseCols, ...seeds, racesPlayed];
+  });
+}
+
+
 async function renderImageFromHTML(htmlContent) {
   const browser = await puppeteer.launch({
     headless: true,
@@ -128,18 +148,18 @@ client.once('ready', async () => {
   console.log(`✅ Bot ready as ${client.user.tag}`);
 
   try {
-    const values = await fetchSheetData('Dashboard!A1:B43');
-const html = generateHTMLTable(values);
-const imageBuffer = await renderImageFromHTML(html);
+    const values = await fetchSheetData('Dashboard!A1:M43');
+    const html = generateHTMLTable(values);
+    const imageBuffer = await renderImageFromHTML(html);
 
-const { AttachmentBuilder } = require('discord.js');
-const attachment = new AttachmentBuilder(imageBuffer, { name: 'dashboard.png' });
-const channel = await client.channels.fetch(CHANNEL_ID);
+    const { AttachmentBuilder } = require('discord.js');
+    const attachment = new AttachmentBuilder(imageBuffer, { name: 'dashboard.png' });
+    const channel = await client.channels.fetch(CHANNEL_ID);
 
-await channel.send({
-  content: '**📊 Rookie Rumble Dashboard**',
-  files: [attachment],
-});
+    await channel.send({
+      content: '**📊 Rookie Rumble Dashboard**',
+      files: [attachment],
+    });
 
 
     console.log('✅ Dashboard posted.');
@@ -147,5 +167,38 @@ await channel.send({
     console.error('❌ Error during dashboard post:', err);
   }
 });
+
+client.on('interactionCreate', async interaction => {
+  if (!interaction.isChatInputCommand()) return;
+
+  if (interaction.commandName === 'dashboard') {
+    const seed = interaction.options.getInteger('seed');
+    if (seed < 1 || seed > 9) {
+      await interaction.reply({ content: '❌ Seed number must be between 1 and 9.', ephemeral: true });
+      return;
+    }
+
+    await interaction.deferReply(); // give yourself time to build image
+
+    try {
+      const fullData = await fetchSheetData('Dashboard!A1:M43');
+      const filtered = extractColumns(fullData, seed);
+      const html = generateHTMLTable(filtered);
+      const imageBuffer = await renderImageFromHTML(html);
+
+      const { AttachmentBuilder } = require('discord.js');
+      const attachment = new AttachmentBuilder(imageBuffer, { name: `dashboard-seed${seed}.png` });
+
+      await interaction.editReply({
+        content: `📊 Dashboard for Seed ${seed}`,
+        files: [attachment],
+      });
+    } catch (err) {
+      console.error('❌ Dashboard generation error:', err);
+      await interaction.editReply({ content: '❌ Failed to generate dashboard.' });
+    }
+  }
+});
+
 
 client.login(process.env.DISCORD_TOKEN);
