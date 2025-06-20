@@ -62,9 +62,26 @@ async function renderImageFromHTML(htmlContent) {
 }
 
 function generateHTMLTable(values) {
-  const rows = values.map(row =>
-    `<tr>${row.map(cell => `<td>${cell || ''}</td>`).join('')}</tr>`
-  ).join('');
+  const htmlRows = values.map((row, rowIndex) => {
+    const cells = row.map((cell, colIndex) => {
+      const value = cell || '';
+
+      // Try to style seed scores (ignore header row and col 0)
+      if (rowIndex > 0 && colIndex > 0) {
+        if (value === '10') {
+          return `<td class="score10">${value}</td>`;
+        } else if (value === '9') {
+          return `<td class="score9">${value}</td>`;
+        } else if (value === '8') {
+          return `<td class="score8">${value}</td>`;
+        }
+      }
+
+      return `<td>${value}</td>`;
+    });
+
+    return `<tr>${cells.join('')}</tr>`;
+  });
 
   return `
     <html>
@@ -106,17 +123,35 @@ function generateHTMLTable(values) {
           tr:nth-child(even) {
             background-color: #1f2d3d;
           }
+
+          /* Highlights */
+          .score10 {
+            background-color: #ffd700; /* gold */
+            font-weight: bold;
+            color: #000;
+          }
+          .score9 {
+            background-color: #c0c0c0; /* silver */
+            font-weight: bold;
+            color: #000;
+          }
+          .score8 {
+            background-color: #cd7f32; /* bronze */
+            font-weight: bold;
+            color: #000;
+          }
         </style>
       </head>
       <body>
         <h2>Rookie Rumble Dashboard</h2>
         <table>
-          ${rows}
+          ${htmlRows.join('')}
         </table>
       </body>
     </html>
   `;
 }
+
 
 
 
