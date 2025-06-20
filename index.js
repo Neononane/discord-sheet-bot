@@ -13,6 +13,63 @@ try {
   console.error('❌ Failed to write service-account.json:', err);
 }
 
+const puppeteer = require('puppeteer');
+
+async function renderImageFromHTML(htmlContent) {
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox'], // required on Railway
+  });
+
+  const page = await browser.newPage();
+  await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+
+  const screenshotBuffer = await page.screenshot({ type: 'png' });
+  await browser.close();
+  return screenshotBuffer;
+}
+
+function generateHTMLTable(values) {
+  const rows = values.map(row =>
+    `<tr>${row.map(cell => `<td>${cell || ''}</td>`).join('')}</tr>`
+  ).join('');
+
+  return `
+    <html>
+      <head>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #fff;
+          }
+          table {
+            border-collapse: collapse;
+            font-size: 16px;
+            width: 100%;
+          }
+          td, th {
+            border: 1px solid #ccc;
+            padding: 8px 12px;
+            text-align: left;
+          }
+          th {
+            background: #f0f0f0;
+          }
+        </style>
+      </head>
+      <body>
+        <h2>Rookie Rumble Dashboard</h2>
+        <table>
+          ${rows}
+        </table>
+      </body>
+    </html>
+  `;
+}
+
+
+
 // STEP 2: Now load remaining dependencies
 require('dotenv').config();
 const { Client, GatewayIntentBits } = require('discord.js');
@@ -59,14 +116,18 @@ client.once('ready', async () => {
   console.log(`✅ Bot ready as ${client.user.tag}`);
 
   try {
-    const range = 'Dashboard!A1:M43'; // Change to your desired range
-    const values = await fetchSheetData(range);
-    const table = formatAsTable(values);
+    const values = await fetchSheetData('Dashboard!A1:B43');
+const html = generateHTMLTable(values);
+const imageBuffer = await renderImageFromHTML(html);
 
-    const channel = await client.channels.fetch(CHANNEL_ID);
-    await channel.send({
-      content: '**📊 Google Sheet Dashboard**\n' + table,
-    });
+const { AttachmentBuilder } = require('discord.js');
+const attachment = new AttachmentBuilder(imageBuffer, { name: 'dashboard.png' });
+
+await channel.send({
+  content: '**📊 Rookie Rumble Dashboard**',
+  files: [attachment],
+});
+
 
     console.log('✅ Dashboard posted.');
   } catch (err) {
