@@ -1,17 +1,24 @@
-// Decode service-account.json from base64 if GOOGLE_CREDS_B64 is present
-if (process.env.GOOGLE_CREDS_B64) {
-  const fs = require('fs');
-  const decoded = Buffer.from(process.env.GOOGLE_CREDS_B64, 'base64').toString('utf-8');
-  fs.writeFileSync('service-account.json', decoded);
+// STEP 1: Decode and write the Google service account file BEFORE ANYTHING ELSE
+const fs = require('fs');
+
+try {
+  if (process.env.GOOGLE_CREDS_B64) {
+    const decoded = Buffer.from(process.env.GOOGLE_CREDS_B64, 'base64').toString('utf-8');
+    fs.writeFileSync('service-account.json', decoded);
+    console.log('✅ service-account.json written to disk');
+  } else {
+    console.log('⚠️ GOOGLE_CREDS_B64 not found in environment');
+  }
+} catch (err) {
+  console.error('❌ Failed to write service-account.json:', err);
 }
 
-// Now load all libraries
+// STEP 2: Now load remaining dependencies
 require('dotenv').config();
 const { Client, GatewayIntentBits } = require('discord.js');
 const { google } = require('googleapis');
-const fs = require('fs');
 
-// Set up Discord client
+// STEP 3: Set up Discord client
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
 });
@@ -19,17 +26,18 @@ const client = new Client({
 const SHEET_ID = process.env.SHEET_ID;
 const CHANNEL_ID = process.env.CHANNEL_ID;
 
-// Set up Google Sheets client AFTER service-account.json is written
+// STEP 4: Set up Google Sheets API client (AFTER file is written)
 const auth = new google.auth.GoogleAuth({
   keyFile: 'service-account.json',
   scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
 });
 const sheets = google.sheets({ version: 'v4', auth });
 
+// STEP 5: Read and format sheet data
 async function fetchSheetData(range) {
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
-    range: range, // Example: "Dashboard!A1:D10"
+    range: range, // e.g., "Dashboard!A1:D10"
   });
   return response.data.values;
 }
@@ -46,11 +54,12 @@ function formatAsTable(values) {
   return '```' + rows.join('\n') + '```';
 }
 
+// STEP 6: Main logic after bot is ready
 client.once('ready', async () => {
-  console.log(`Bot ready as ${client.user.tag}`);
+  console.log(`✅ Bot ready as ${client.user.tag}`);
 
   try {
-    const range = 'Dashboard!A1:D10'; // 🔁 Update this if needed
+    const range = 'Dashboard!A1:D10'; // Change to your desired range
     const values = await fetchSheetData(range);
     const table = formatAsTable(values);
 
@@ -59,7 +68,7 @@ client.once('ready', async () => {
       content: '**📊 Google Sheet Dashboard**\n' + table,
     });
 
-    console.log('Dashboard posted.');
+    console.log('✅ Dashboard posted.');
   } catch (err) {
     console.error('❌ Error during dashboard post:', err);
   }
