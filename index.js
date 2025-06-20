@@ -22,6 +22,7 @@ async function renderImageFromHTML(htmlContent) {
   });
 
   const page = await browser.newPage();
+  await page.setViewport({ width: 800, height: 3000 });
   await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
 
   const screenshotBuffer = await page.screenshot({ type: 'png' });
