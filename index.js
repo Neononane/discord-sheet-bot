@@ -83,6 +83,7 @@ async function renderImageFromHTML(htmlContent) {
 
 function generateHTMLTable(values) {
   const top4HeaderIndex = values[0].indexOf('Top 4 Total');
+  const hasTop4Column = top4HeaderIndex !== -1;
 
   const htmlRows = values.map((row, rowIndex) => {
     const cells = row.map((cell, colIndex) => {
@@ -90,14 +91,14 @@ function generateHTMLTable(values) {
       const isHeader = rowIndex === 0;
 
       const isSeedColumn = colIndex >= 1 && colIndex <= 9;
-      const isTop4TotalColumn = colIndex === top4HeaderIndex;
+      const isTop4TotalColumn = hasTop4Column && colIndex === top4HeaderIndex;
 
       if (isHeader) {
         return `<th>${value || ''}</th>`;
       }
 
       if (isSeedColumn) {
-        if (!value) {
+        if (!value || value.toLowerCase() === 'x') {
           return `<td class="no-race">✘</td>`;
         }
 
@@ -107,7 +108,7 @@ function generateHTMLTable(values) {
         if (num === 8) return `<td class="score8">${value}</td>`;
 
         if (num <= 7 && num >= 0.5) {
-          const intensity = Math.floor(255 - (num / 7) * 150);
+          const intensity = Math.floor(255 - (num / 7) * 150); // 105–255
           const bg = `rgb(${intensity}, ${intensity}, 255)`;
           return `<td style="background-color:${bg};color:#000;">${value}</td>`;
         }
@@ -115,9 +116,10 @@ function generateHTMLTable(values) {
 
       if (isTop4TotalColumn && value && !isNaN(parseFloat(value))) {
         const num = parseFloat(value);
-        const intensity = Math.floor(255 - (Math.min(num, 40) / 40) * 120); // cap at 40
-        const bg = `rgb(${intensity}, ${intensity + 15}, ${intensity + 40})`;
-        return `<td style="background-color:${bg};color:#000;">${value}</td>`;
+        const capped = Math.min(num, 40);
+        const gradient = Math.floor((capped / 40) * 100);
+        const bg = `linear-gradient(to right, #88f 0%, #88f ${gradient}%, transparent ${gradient}%)`;
+        return `<td style="background: ${bg}; color: #fff;">${value}</td>`;
       }
 
       return `<td>${value || ''}</td>`;
@@ -181,6 +183,7 @@ function generateHTMLTable(values) {
     </html>
   `;
 }
+
 
 
 // STEP 2: Load remaining dependencies
