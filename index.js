@@ -224,7 +224,7 @@ async function fetchSheetData(range) {
 client.once('ready', async () => {
   console.log(`✅ Bot ready as ${client.user.tag}`);
   try {
-    const raw = await fetchSheetData('Dashboard!A1:M43');
+    const raw = await fetchSheetData('Dashboard!A1:M');
     const filtered = extractColumns(raw, 9); // default to all seeds
     const html = generateHTMLTable(filtered);
     const imageBuffer = await renderImageFromHTML(html);
@@ -256,7 +256,8 @@ client.on('interactionCreate', async interaction => {
     await interaction.deferReply(); // give yourself time to build image
 
     try {
-      const fullData = await fetchSheetData('Dashboard!A1:M43');
+      const fullData = await fetchSheetData('Dashboard!A1:M');
+
       const filtered = extractColumns(fullData, seed);
 
       // Sort by seed score (colIndex = seed), fallback to Top 4 Total (last col)
