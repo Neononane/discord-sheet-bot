@@ -19,36 +19,42 @@ function extractColumns(values, seedNumber) {
   const seedStart = 1; // column B
   const seedEnd = seedStart + seedNumber - 1;
 
-  return values.map((row, rowIndex) => {
-    const baseCols = [row[0]]; // Racer (column A)
-    const seeds = row.slice(seedStart, seedEnd + 1);
-    const racesPlayed = row[10] || '';
-    const top4Total = row[11] || '';
-    const badge = row[12] || '';
+  return values
+    .map((row, rowIndex) => {
+      const baseCols = [row[0]]; // Racer (column A)
+      const seeds = row.slice(seedStart, seedEnd + 1);
+      const racesPlayed = row[10] || '';
+      const top4Total = row[11] || '';
+      const badge = row[12] || '';
 
-    const showExtras = seedNumber >= 4;
+      const showExtras = seedNumber >= 4;
 
-    const extracted = showExtras
-      ? [...baseCols, ...seeds, racesPlayed, top4Total, badge]
-      : [...baseCols, ...seeds, racesPlayed];
+      const extracted = showExtras
+        ? [...baseCols, ...seeds, racesPlayed, top4Total, badge]
+        : [...baseCols, ...seeds, racesPlayed];
 
-    // Attach metadata to header row for column identification
-    if (rowIndex === 0) {
-      return extracted.map((cell, i) => {
-        if (showExtras) {
-          if (i === extracted.length - 3) return 'Races Played';
-          if (i === extracted.length - 2) return 'Top 4 Total';
-          if (i === extracted.length - 1) return 'Badge';
-        } else {
-          if (i === extracted.length - 1) return 'Races Played';
-        }
-        return cell;
-      });
-    }
+      if (rowIndex === 0) {
+        // Label columns for downstream logic
+        return extracted.map((cell, i) => {
+          if (showExtras) {
+            if (i === extracted.length - 3) return 'Races Played';
+            if (i === extracted.length - 2) return 'Top 4 Total';
+            if (i === extracted.length - 1) return 'Badge';
+          } else {
+            if (i === extracted.length - 1) return 'Races Played';
+          }
+          return cell;
+        });
+      }
 
-    return extracted;
-  });
+      // Skip rows with no racer name
+      if (!row[0]) return null;
+
+      return extracted;
+    })
+    .filter(row => row !== null);
 }
+
 
 
 async function renderImageFromHTML(htmlContent) {
