@@ -84,13 +84,13 @@ function generateHTMLTable(values) {
         if (num === 9) return `<td class="score9">${value}</td>`;
         if (num === 8) return `<td class="score8">${value}</td>`;
 
-        // Gradient from 7 → 0.5
         if (num <= 7 && num >= 0.5) {
           const intensity = Math.floor(255 - (num / 7) * 150); // 105–255
           const bg = `rgb(${intensity}, ${intensity}, 255)`;
           return `<td style="background-color:${bg};color:#000;">${value}</td>`;
         }
       }
+
 
       return `<td>${value || ''}</td>`;
     });
