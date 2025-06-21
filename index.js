@@ -222,6 +222,7 @@ client.once('ready', async () => {
   try {
     const raw = await fetchSheetData('Dashboard!A1:M43');
     const filtered = extractColumns(raw, 9); // default to all seeds
+    console.log("Raw values length:", values.length);
     const html = generateHTMLTable(filtered);
     const imageBuffer = await renderImageFromHTML(html);
     const attachment = new AttachmentBuilder(imageBuffer, { name: 'dashboard.png' });
