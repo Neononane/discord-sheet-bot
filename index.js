@@ -64,20 +64,35 @@ async function renderImageFromHTML(htmlContent) {
 function generateHTMLTable(values) {
   const htmlRows = values.map((row, rowIndex) => {
     const cells = row.map((cell, colIndex) => {
-      const value = cell || '';
+      let value = cell?.toString().trim() || '';
+      const isHeader = rowIndex === 0;
 
-      // Try to style seed scores (ignore header row and col 0)
-      if (rowIndex > 0 && colIndex > 0) {
-        if (value === '10') {
-          return `<td class="score10">${value}</td>`;
-        } else if (value === '9') {
-          return `<td class="score9">${value}</td>`;
-        } else if (value === '8') {
-          return `<td class="score8">${value}</td>`;
+      // Style seed columns (everything except Racer and summary columns)
+      const isSeedColumn = colIndex > 0 && colIndex <= 9;
+
+      if (isHeader) {
+        return `<th>${value || ''}</th>`;
+      }
+
+      if (isSeedColumn) {
+        if (!value) {
+          return `<td class="no-race">✘</td>`;
+        }
+
+        const num = parseFloat(value);
+        if (num === 10) return `<td class="score10">${value}</td>`;
+        if (num === 9) return `<td class="score9">${value}</td>`;
+        if (num === 8) return `<td class="score8">${value}</td>`;
+
+        // Gradient from 7 → 0.5
+        if (num <= 7 && num >= 0.5) {
+          const intensity = Math.floor(255 - (num / 7) * 150); // 105–255
+          const bg = `rgb(${intensity}, ${intensity}, 255)`;
+          return `<td style="background-color:${bg};color:#000;">${value}</td>`;
         }
       }
 
-      return `<td>${value}</td>`;
+      return `<td>${value || ''}</td>`;
     });
 
     return `<tr>${cells.join('')}</tr>`;
@@ -139,6 +154,13 @@ function generateHTMLTable(values) {
             background-color: #cd7f32; /* bronze */
             font-weight: bold;
             color: #000;
+          }
+
+          .no-race {
+            color: #f44;
+            font-weight: bold;
+            text-align: center;
+            background-color: #330000;
           }
         </style>
       </head>
