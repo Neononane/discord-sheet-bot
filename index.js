@@ -82,6 +82,7 @@ async function renderImageFromHTML(htmlContent) {
 }
 
 function generateHTMLTable(values) {
+      console.log("Raw values length:", values.length);
   const top4HeaderIndex = values[0].indexOf('Top 4 Total');
   const hasTop4Column = top4HeaderIndex >= 0 && values[0].includes('Top 4 Total');
 
@@ -222,7 +223,6 @@ client.once('ready', async () => {
   try {
     const raw = await fetchSheetData('Dashboard!A1:M43');
     const filtered = extractColumns(raw, 9); // default to all seeds
-    console.log("Raw values length:", values.length);
     const html = generateHTMLTable(filtered);
     const imageBuffer = await renderImageFromHTML(html);
     const attachment = new AttachmentBuilder(imageBuffer, { name: 'dashboard.png' });
