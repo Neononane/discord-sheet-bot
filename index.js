@@ -91,7 +91,9 @@ function generateHTMLTable(values) {
       let value = cell?.toString().trim() || '';
       const isHeader = rowIndex === 0;
 
-      const isSeedColumn = colIndex >= 1 && colIndex <= 9;
+      const seedColumnHeaders = values[0].filter(h => h.startsWith('Seed'));
+      const isSeedColumn = seedColumnHeaders.includes(values[0][colIndex]);
+
       const isTop4TotalColumn = hasTop4Column && colIndex === top4HeaderIndex;
 
       if (isHeader) {
