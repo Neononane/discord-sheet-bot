@@ -48,7 +48,7 @@ function extractColumns(values, seedNumber) {
       }
 
       // Skip rows with no racer name
-      if (!row[0]) return null;
+      if (rowIndex !== 0 && (!row[0] || row[0].toString().trim() === '')) return null;
 
       return extracted;
     })
@@ -82,52 +82,46 @@ async function renderImageFromHTML(htmlContent) {
 }
 
 function generateHTMLTable(values) {
+  const top4HeaderIndex = values[0].indexOf('Top 4 Total');
+
   const htmlRows = values.map((row, rowIndex) => {
     const cells = row.map((cell, colIndex) => {
-  let value = cell?.toString().trim() || '';
-  const isHeader = rowIndex === 0;
+      let value = cell?.toString().trim() || '';
+      const isHeader = rowIndex === 0;
 
-  // Style seed columns B–J (indexes 1–9)
-  const isSeedColumn = colIndex >= 1 && colIndex <= 9;
+      const isSeedColumn = colIndex >= 1 && colIndex <= 9;
+      const isTop4TotalColumn = colIndex === top4HeaderIndex;
 
-  // Style Top 4 Total column (L / index 11)
-  const top4HeaderIndex = values[0].indexOf('Top 4 Total');
-  const isTop4TotalColumn = colIndex === top4HeaderIndex;
+      if (isHeader) {
+        return `<th>${value || ''}</th>`;
+      }
 
+      if (isSeedColumn) {
+        if (!value) {
+          return `<td class="no-race">✘</td>`;
+        }
 
-  if (isHeader) {
-    return `<th>${value || ''}</th>`;
-  }
+        const num = parseFloat(value);
+        if (num === 10) return `<td class="score10">${value}</td>`;
+        if (num === 9) return `<td class="score9">${value}</td>`;
+        if (num === 8) return `<td class="score8">${value}</td>`;
 
-  if (isSeedColumn) {
-    if (!value) {
-      return `<td class="no-race">✘</td>`;
-    }
+        if (num <= 7 && num >= 0.5) {
+          const intensity = Math.floor(255 - (num / 7) * 150);
+          const bg = `rgb(${intensity}, ${intensity}, 255)`;
+          return `<td style="background-color:${bg};color:#000;">${value}</td>`;
+        }
+      }
 
-    const num = parseFloat(value);
-    if (num === 10) return `<td class="score10">${value}</td>`;
-    if (num === 9) return `<td class="score9">${value}</td>`;
-    if (num === 8) return `<td class="score8">${value}</td>`;
+      if (isTop4TotalColumn && value && !isNaN(parseFloat(value))) {
+        const num = parseFloat(value);
+        const intensity = Math.floor(255 - (Math.min(num, 40) / 40) * 120); // cap at 40
+        const bg = `rgb(${intensity}, ${intensity + 15}, ${intensity + 40})`;
+        return `<td style="background-color:${bg};color:#000;">${value}</td>`;
+      }
 
-    if (num <= 7 && num >= 0.5) {
-      const intensity = Math.floor(255 - (num / 7) * 150); // 105–255
-      const bg = `rgb(${intensity}, ${intensity}, 255)`;
-      return `<td style="background-color:${bg};color:#000;">${value}</td>`;
-    }
-  }
-
-  if (isTop4TotalColumn) {
-    const num = parseFloat(value);
-    if (!isNaN(num)) {
-      const gradient = Math.floor((num / 40) * 100); // Assume 40 is max theoretical score
-      const bg = `linear-gradient(to right, #88f 0%, #88f ${gradient}%, transparent ${gradient}%)`;
-      return `<td style="background: ${bg}; color: #fff;">${value}</td>`;
-    }
-  }
-
-  return `<td>${value || ''}</td>`;
-  });
-
+      return `<td>${value || ''}</td>`;
+    });
 
     return `<tr>${cells.join('')}</tr>`;
   });
@@ -187,6 +181,7 @@ function generateHTMLTable(values) {
     </html>
   `;
 }
+
 
 // STEP 2: Load remaining dependencies
 require('dotenv').config();
