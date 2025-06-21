@@ -48,9 +48,12 @@ function extractColumns(values, seedNumber) {
       }
 
       // Skip rows with no racer name
-      if (rowIndex !== 0 && (!row[0] || row[0].toString().trim() === '')) return null;
+      // Only skip if the entire row is empty
+      const isEmptyRow = row.every(cell => !cell || cell.toString().trim() === '');
+      if (rowIndex !== 0 && isEmptyRow) return null;
 
       return extracted;
+
     })
     .filter(row => row !== null);
 }
