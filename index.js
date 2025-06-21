@@ -16,34 +16,40 @@ try {
 const puppeteer = require('puppeteer');
 
 function extractColumns(values, seedNumber) {
-  const seedStart = 1; // B is index 1
+  const seedStart = 1; // column B
   const seedEnd = seedStart + seedNumber - 1;
 
-  // Remove blank racer rows
-  const dataRows = values.slice(1).filter(row => row[0] && row[0].trim() !== '');
-
-  // Sort by Top 4 Total (column L = index 11)
-  const sorted = dataRows.sort((a, b) => (parseFloat(b[11]) || 0) - (parseFloat(a[11]) || 0));
-
-  const header = values[0];
-  const filteredHeader = seedNumber >= 4
-    ? [...header.slice(0, seedEnd + 1), header[10], header[11], header[12]]
-    : [...header.slice(0, seedEnd + 1), header[10]];
-
-  const filteredRows = sorted.map(row => {
-    const baseCols = [row[0]];
+  return values.map((row, rowIndex) => {
+    const baseCols = [row[0]]; // Racer (column A)
     const seeds = row.slice(seedStart, seedEnd + 1);
     const racesPlayed = row[10] || '';
     const top4Total = row[11] || '';
     const badge = row[12] || '';
 
-    return seedNumber >= 4
+    const showExtras = seedNumber >= 4;
+
+    const extracted = showExtras
       ? [...baseCols, ...seeds, racesPlayed, top4Total, badge]
       : [...baseCols, ...seeds, racesPlayed];
-  });
 
-  return [filteredHeader, ...filteredRows];
+    // Attach metadata to header row for column identification
+    if (rowIndex === 0) {
+      return extracted.map((cell, i) => {
+        if (showExtras) {
+          if (i === extracted.length - 3) return 'Races Played';
+          if (i === extracted.length - 2) return 'Top 4 Total';
+          if (i === extracted.length - 1) return 'Badge';
+        } else {
+          if (i === extracted.length - 1) return 'Races Played';
+        }
+        return cell;
+      });
+    }
+
+    return extracted;
+  });
 }
+
 
 async function renderImageFromHTML(htmlContent) {
   const browser = await puppeteer.launch({
@@ -79,7 +85,9 @@ function generateHTMLTable(values) {
   const isSeedColumn = colIndex >= 1 && colIndex <= 9;
 
   // Style Top 4 Total column (L / index 11)
-  const isTop4TotalColumn = colIndex === 11;
+  const top4HeaderIndex = values[0].indexOf('Top 4 Total');
+  const isTop4TotalColumn = colIndex === top4HeaderIndex;
+
 
   if (isHeader) {
     return `<th>${value || ''}</th>`;
