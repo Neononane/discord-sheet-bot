@@ -16,46 +16,54 @@ try {
 const puppeteer = require('puppeteer');
 
 function extractColumns(values, seedNumber) {
-  const seedStart = 1; // B is index 1 (0-based), so Seed 1 is at index 1
+  const seedStart = 1; // B is index 1
   const seedEnd = seedStart + seedNumber - 1;
 
-  return values.map(row => {
-    const baseCols = [row[0]]; // Column A: Racer
-    const seeds = row.slice(seedStart, seedEnd + 1); // Seeds B to desired
-    const racesPlayed = row[10] || ''; // Column K
-    const top4Total = row[11] || '';   // Column L
-    const badge = row[12] || '';       // Column M
+  // Remove blank racer rows
+  const dataRows = values.slice(1).filter(row => row[0] && row[0].trim() !== '');
 
-    const showExtras = seedNumber >= 4;
+  // Sort by Top 4 Total (column L = index 11)
+  const sorted = dataRows.sort((a, b) => (parseFloat(b[11]) || 0) - (parseFloat(a[11]) || 0));
 
-    return showExtras
+  const header = values[0];
+  const filteredHeader = seedNumber >= 4
+    ? [...header.slice(0, seedEnd + 1), header[10], header[11], header[12]]
+    : [...header.slice(0, seedEnd + 1), header[10]];
+
+  const filteredRows = sorted.map(row => {
+    const baseCols = [row[0]];
+    const seeds = row.slice(seedStart, seedEnd + 1);
+    const racesPlayed = row[10] || '';
+    const top4Total = row[11] || '';
+    const badge = row[12] || '';
+
+    return seedNumber >= 4
       ? [...baseCols, ...seeds, racesPlayed, top4Total, badge]
       : [...baseCols, ...seeds, racesPlayed];
   });
-}
 
+  return [filteredHeader, ...filteredRows];
+}
 
 async function renderImageFromHTML(htmlContent) {
   const browser = await puppeteer.launch({
     headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox'], // required on Railway
+    args: ['--no-sandbox', '--disable-setuid-sandbox'],
   });
 
   const page = await browser.newPage();
-  
   await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
-  const dimensions = await page.evaluate(() => {
-    return {
-      width: document.body.scrollWidth,
-      height: document.body.scrollHeight,
-    };
+
+  const dimensions = await page.evaluate(() => ({
+    width: document.body.scrollWidth,
+    height: document.body.scrollHeight,
+  }));
+
+  await page.setViewport({
+    width: Math.min(dimensions.width + 40, 2000),
+    height: Math.min(dimensions.height + 40, 4000),
   });
 
-  // Resize the viewport to match content
-  await page.setViewport({
-    width: Math.min(dimensions.width + 40, 2000),  // cap width for safety
-    height: Math.min(dimensions.height + 40, 4000), // cap height to avoid accidental infinite scroll
-  });
   const screenshotBuffer = await page.screenshot({ type: 'png' });
   await browser.close();
   return screenshotBuffer;
@@ -66,31 +74,26 @@ function generateHTMLTable(values) {
     const cells = row.map((cell, colIndex) => {
       let value = cell?.toString().trim() || '';
       const isHeader = rowIndex === 0;
-
-      // Style seed columns (everything except Racer and summary columns)
       const isSeedColumn = colIndex > 0 && colIndex <= 9;
+      const isScored = !isHeader && isSeedColumn;
 
       if (isHeader) {
         return `<th>${value || ''}</th>`;
       }
 
-      if (isSeedColumn) {
-        if (!value) {
-          return `<td class="no-race">✘</td>`;
-        }
+      if (isScored) {
+        if (!value) return `<td class="no-race">✘</td>`;
 
         const num = parseFloat(value);
         if (num === 10) return `<td class="score10">${value}</td>`;
         if (num === 9) return `<td class="score9">${value}</td>`;
         if (num === 8) return `<td class="score8">${value}</td>`;
-
         if (num <= 7 && num >= 0.5) {
-          const intensity = Math.floor(255 - (num / 7) * 150); // 105–255
+          const intensity = Math.floor(255 - (num / 7) * 150);
           const bg = `rgb(${intensity}, ${intensity}, 255)`;
           return `<td style="background-color:${bg};color:#000;">${value}</td>`;
         }
       }
-
 
       return `<td>${value || ''}</td>`;
     });
@@ -138,30 +141,10 @@ function generateHTMLTable(values) {
           tr:nth-child(even) {
             background-color: #1f2d3d;
           }
-
-          /* Highlights */
-          .score10 {
-            background-color: #ffd700; /* gold */
-            font-weight: bold;
-            color: #000;
-          }
-          .score9 {
-            background-color: #c0c0c0; /* silver */
-            font-weight: bold;
-            color: #000;
-          }
-          .score8 {
-            background-color: #cd7f32; /* bronze */
-            font-weight: bold;
-            color: #000;
-          }
-
-          .no-race {
-            color: #f44;
-            font-weight: bold;
-            text-align: center;
-            background-color: #330000;
-          }
+          .score10 { background-color: #ffd700; font-weight: bold; color: #000; }
+          .score9 { background-color: #c0c0c0; font-weight: bold; color: #000; }
+          .score8 { background-color: #cd7f32; font-weight: bold; color: #000; }
+          .no-race { color: #f44; font-weight: bold; text-align: center; background-color: #330000; }
         </style>
       </head>
       <body>
@@ -174,61 +157,41 @@ function generateHTMLTable(values) {
   `;
 }
 
-
-
-
-
-// STEP 2: Now load remaining dependencies
+// STEP 2: Load remaining dependencies
 require('dotenv').config();
-const { Client, GatewayIntentBits } = require('discord.js');
+const { Client, GatewayIntentBits, AttachmentBuilder } = require('discord.js');
 const { google } = require('googleapis');
 
-// STEP 3: Set up Discord client
-const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
-});
+// STEP 3: Discord client
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages] });
 
 const SHEET_ID = process.env.SHEET_ID;
 const CHANNEL_ID = process.env.CHANNEL_ID;
 
-// STEP 4: Set up Google Sheets API client (AFTER file is written)
+// STEP 4: Google Sheets client
 const auth = new google.auth.GoogleAuth({
   keyFile: 'service-account.json',
   scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
 });
 const sheets = google.sheets({ version: 'v4', auth });
 
-// STEP 5: Read and format sheet data
+// STEP 5: Sheet fetch
 async function fetchSheetData(range) {
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: SHEET_ID,
-    range: range, // e.g., "Dashboard!A1:D10"
+    range: range,
   });
   return response.data.values;
 }
 
-function formatAsTable(values) {
-  if (!values || values.length === 0) return 'No data found.';
-  const colWidths = values[0].map((_, col) =>
-    Math.max(...values.map(row => (row[col] || '').length))
-  );
-
-  const rows = values.map(row =>
-    row.map((val, i) => (val || '').padEnd(colWidths[i])).join(' | ')
-  );
-  return '```' + rows.join('\n') + '```';
-}
-
-// STEP 6: Main logic after bot is ready
+// STEP 6: On ready, send dashboard
 client.once('ready', async () => {
   console.log(`✅ Bot ready as ${client.user.tag}`);
-
   try {
-    const values = await fetchSheetData('Dashboard!A1:M43');
-    const html = generateHTMLTable(values);
+    const raw = await fetchSheetData('Dashboard!A1:M43');
+    const filtered = extractColumns(raw, 9); // default to all seeds
+    const html = generateHTMLTable(filtered);
     const imageBuffer = await renderImageFromHTML(html);
-
-    const { AttachmentBuilder } = require('discord.js');
     const attachment = new AttachmentBuilder(imageBuffer, { name: 'dashboard.png' });
     const channel = await client.channels.fetch(CHANNEL_ID);
 
@@ -237,13 +200,13 @@ client.once('ready', async () => {
       files: [attachment],
     });
 
-
     console.log('✅ Dashboard posted.');
   } catch (err) {
     console.error('❌ Error during dashboard post:', err);
   }
 });
 
+// STEP 7: Slash command handler
 client.on('interactionCreate', async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
@@ -254,15 +217,12 @@ client.on('interactionCreate', async interaction => {
       return;
     }
 
-    await interaction.deferReply(); // give yourself time to build image
-
+    await interaction.deferReply();
     try {
-      const fullData = await fetchSheetData('Dashboard!A1:M43');
-      const filtered = extractColumns(fullData, seed);
+      const raw = await fetchSheetData('Dashboard!A1:M43');
+      const filtered = extractColumns(raw, seed);
       const html = generateHTMLTable(filtered);
       const imageBuffer = await renderImageFromHTML(html);
-
-      const { AttachmentBuilder } = require('discord.js');
       const attachment = new AttachmentBuilder(imageBuffer, { name: `dashboard-seed${seed}.png` });
 
       await interaction.editReply({
@@ -275,6 +235,5 @@ client.on('interactionCreate', async interaction => {
     }
   }
 });
-
 
 client.login(process.env.DISCORD_TOKEN);
