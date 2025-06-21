@@ -83,7 +83,8 @@ async function renderImageFromHTML(htmlContent) {
 
 function generateHTMLTable(values) {
   const top4HeaderIndex = values[0].indexOf('Top 4 Total');
-  const hasTop4Column = top4HeaderIndex !== -1;
+  const hasTop4Column = top4HeaderIndex >= 0 && values[0].includes('Top 4 Total');
+
 
   const htmlRows = values.map((row, rowIndex) => {
     const cells = row.map((cell, colIndex) => {
@@ -114,7 +115,7 @@ function generateHTMLTable(values) {
         }
       }
 
-      if (isTop4TotalColumn && value && !isNaN(parseFloat(value))) {
+      if (hasTop4Column && colIndex === top4HeaderIndex && value && !isNaN(parseFloat(value))) {
         const num = parseFloat(value);
         const capped = Math.min(num, 40);
         const gradient = Math.floor((capped / 40) * 100);
