@@ -217,12 +217,34 @@ client.on('interactionCreate', async interaction => {
       return;
     }
 
-    await interaction.deferReply();
+    await interaction.deferReply(); // give yourself time to build image
+
     try {
-      const raw = await fetchSheetData('Dashboard!A1:M43');
-      const filtered = extractColumns(raw, seed);
-      const html = generateHTMLTable(filtered);
+      const fullData = await fetchSheetData('Dashboard!A1:M43');
+      const filtered = extractColumns(fullData, seed);
+
+      // Sort by seed score (colIndex = seed), fallback to Top 4 Total (last col)
+      const headers = filtered.shift(); // keep headers safe
+      const seedCol = seed; // A is 0, so Seed 1 = index 1, etc.
+      const top4Col = seed >= 4 ? filtered[0].length - 2 : null; // 2nd to last column if included
+
+      filtered.sort((a, b) => {
+        const aSeed = parseFloat(a[seedCol]) || 0;
+        const bSeed = parseFloat(b[seedCol]) || 0;
+        if (bSeed !== aSeed) return bSeed - aSeed;
+
+        if (top4Col !== null) {
+          const aTop4 = parseFloat(a[top4Col]) || 0;
+          const bTop4 = parseFloat(b[top4Col]) || 0;
+          return bTop4 - aTop4;
+        }
+        return 0;
+      });
+
+      const html = generateHTMLTable([headers, ...filtered]);
       const imageBuffer = await renderImageFromHTML(html);
+
+      const { AttachmentBuilder } = require('discord.js');
       const attachment = new AttachmentBuilder(imageBuffer, { name: `dashboard-seed${seed}.png` });
 
       await interaction.editReply({
@@ -235,5 +257,6 @@ client.on('interactionCreate', async interaction => {
     }
   }
 });
+
 
 client.login(process.env.DISCORD_TOKEN);
