@@ -26,11 +26,12 @@ function extractColumns(values, seedNumber) {
       const racesPlayed = row[10] || '';
       const top4Total = row[11] || '';
       const badge = row[12] || '';
+      const overallRanking = row[13] || '';
 
       const showExtras = seedNumber >= 4;
 
       const extracted = showExtras
-        ? [...baseCols, ...seeds, racesPlayed, top4Total, badge]
+        ? [...baseCols, ...seeds, racesPlayed, top4Total, overallRanking]
         : [...baseCols, ...seeds, racesPlayed];
 
       if (rowIndex === 0) {
@@ -39,7 +40,7 @@ function extractColumns(values, seedNumber) {
           if (showExtras) {
             if (i === extracted.length - 3) return 'Races Played';
             if (i === extracted.length - 2) return 'Top 4 Total';
-            if (i === extracted.length - 1) return 'Badge';
+            if (i === extracted.length - 1) return 'Overall Rankings';
           } else {
             if (i === extracted.length - 1) return 'Races Played';
           }
@@ -224,7 +225,7 @@ async function fetchSheetData(range) {
 client.once('ready', async () => {
   console.log(`✅ Bot ready as ${client.user.tag}`);
   try {
-    const raw = await fetchSheetData('Dashboard!A1:M');
+    const raw = await fetchSheetData('Dashboard!A1:N');
     const filtered = extractColumns(raw, 9); // default to all seeds
     const html = generateHTMLTable(filtered);
     const imageBuffer = await renderImageFromHTML(html);
@@ -256,7 +257,7 @@ client.on('interactionCreate', async interaction => {
     await interaction.deferReply(); // give yourself time to build image
 
     try {
-      const fullData = await fetchSheetData('Dashboard!A1:M');
+      const fullData = await fetchSheetData('Dashboard!A1:N');
 
       const filtered = extractColumns(fullData, seed);
 
@@ -266,17 +267,22 @@ client.on('interactionCreate', async interaction => {
       const top4Col = seed >= 4 ? filtered[0].length - 2 : null; // 2nd to last column if included
 
       filtered.sort((a, b) => {
-        const aSeed = parseFloat(a[seedCol]) || 0;
-        const bSeed = parseFloat(b[seedCol]) || 0;
-        if (bSeed !== aSeed) return bSeed - aSeed;
+  if (seed >= 4) {
+    const aTop4 = parseFloat(a[top4Col]) || 0;
+    const bTop4 = parseFloat(b[top4Col]) || 0;
+    if (bTop4 !== aTop4) return bTop4 - aTop4;
 
-        if (top4Col !== null) {
-          const aTop4 = parseFloat(a[top4Col]) || 0;
-          const bTop4 = parseFloat(b[top4Col]) || 0;
-          return bTop4 - aTop4;
-        }
-        return 0;
-      });
+    // Tie-breaker: Overall Rankings
+    const aOverall = parseFloat(a[top4Col + 1]) || Infinity;
+    const bOverall = parseFloat(b[top4Col + 1]) || Infinity;
+    return aOverall - bOverall;
+  } else {
+    const aSeed = parseFloat(a[seedCol]) || 0;
+    const bSeed = parseFloat(b[seedCol]) || 0;
+    return bSeed - aSeed;
+  }
+});
+
 
       const html = generateHTMLTable([headers, ...filtered]);
       const imageBuffer = await renderImageFromHTML(html);
