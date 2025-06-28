@@ -140,47 +140,51 @@ function generateHTMLTable(values) {
     <html>
       <head>
         <style>
-          body {
-            background: linear-gradient(to bottom, #0d1b2a, #1b263b);
-            color: #ffffff;
-            font-family: 'Segoe UI', sans-serif;
-            padding: 40px;
-            margin: 0;
-          }
-          h2 {
-            color: #ffffff;
-            font-size: 32px;
-            margin-bottom: 20px;
-            text-align: center;
-          }
-          table {
-            width: 100%;
-            border-collapse: collapse;
-            background-color: #1b263b;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 0 15px rgba(255, 255, 255, 0.05);
-          }
-          th {
-            background-color: #112030;
-            color: #fcbf49;
-            font-weight: 600;
-            padding: 12px;
-            text-align: left;
-            border-bottom: 2px solid #334e68;
-          }
-          td {
-            padding: 12px;
-            border-bottom: 1px solid #334e68;
-          }
-          tr:nth-child(even) {
-            background-color: #1f2d3d;
-          }
-          .score10 { background-color: #ffd700; font-weight: bold; color: #000; }
-          .score9 { background-color: #c0c0c0; font-weight: bold; color: #000; }
-          .score8 { background-color: #cd7f32; font-weight: bold; color: #000; }
-          .no-race { color: #f44; font-weight: bold; text-align: center; background-color: #330000; }
-        </style>
+  body {
+    background: linear-gradient(to bottom, #0d1b2a, #1b263b);
+    color: #ffffff;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 20px; /* was 16px */
+    padding: 40px;
+    margin: 0;
+  }
+  h2 {
+    color: #ffffff;
+    font-size: 40px; /* was 32px */
+    margin-bottom: 30px;
+    text-align: center;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #1b263b;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.05);
+  }
+  th {
+    background-color: #112030;
+    color: #fcbf49;
+    font-weight: 700;
+    font-size: 22px; /* NEW */
+    padding: 16px; /* was 12px */
+    text-align: left;
+    border-bottom: 2px solid #334e68;
+  }
+  td {
+    font-size: 20px; /* NEW */
+    padding: 16px; /* was 12px */
+    border-bottom: 1px solid #334e68;
+  }
+  tr:nth-child(even) {
+    background-color: #1f2d3d;
+  }
+  .score10 { background-color: #ffd700; font-weight: bold; color: #000; }
+  .score9 { background-color: #c0c0c0; font-weight: bold; color: #000; }
+  .score8 { background-color: #cd7f32; font-weight: bold; color: #000; }
+  .no-race { color: #f44; font-weight: bold; text-align: center; background-color: #330000; }
+</style>
+
       </head>
       <body>
         <h2>Rookie Rumble Dashboard</h2>
